@@ -4,6 +4,7 @@ How Couch Remote and TVKit talk to a Samsung Tizen TV on the local network. Ever
 
 | Port | Interface | Pairing | Used for |
 |---|---|---|---|
+| 5353/udp | Bonjour (mDNS) `_samsungmsf._tcp` | no | finding TVs |
 | 1900/udp | SSDP | no | finding TVs |
 | 8001 | REST API (HTTP) | no | device info, app state, launching apps |
 | 8002 | Remote-control WebSocket (TLS) | yes | keys, pointer, text input |
@@ -12,9 +13,16 @@ How Couch Remote and TVKit talk to a Samsung Tizen TV on the local network. Ever
 | 9/udp | Wake-on-LAN | no | power on from standby |
 | 26101 | sdb (Developer Mode only) | host IP set on the TV | exact app list, files, starting system apps |
 
-## Discovery (SSDP)
+## Discovery
 
-Send an M-SEARCH to `239.255.255.250:1900`:
+TVKit's `Discovery.find()` runs two searches at once and confirms every hit with the REST API.
+
+**Bonjour.** The TV advertises `_samsungmsf._tcp` (Samsung's multiscreen service, the REST API on
+port 8001). The instance name is the TV's ID, e.g. `uuid:6eaae8dd-cb58-4d04-be49-d94ce973ff99`.
+Browsing goes through the system's mDNS service, which kept working where raw multicast from an
+app was blocked. A macOS app that browses it should list the type under `NSBonjourServices`.
+
+**SSDP.** An M-SEARCH to `239.255.255.250:1900`:
 
 ```
 M-SEARCH * HTTP/1.1
@@ -24,7 +32,8 @@ MX: 2
 ST: urn:samsung.com:device:RemoteControlReceiver:1
 ```
 
-Samsung TVs answer from their own IP. TVKit takes the sender address and confirms it with the REST API (`Discovery.find()`).
+*Reported:* Samsung TVs answer from their own IP. On the test network no device answered any
+SSDP search sent from a terminal session, so SSDP is kept only as a second route.
 
 ## REST API (port 8001)
 

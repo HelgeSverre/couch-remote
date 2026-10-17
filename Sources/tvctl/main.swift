@@ -23,6 +23,7 @@ usage: tvctl [--host <ip>] <command> [args]
   raw '<json>' [...]    send WebSocket messages as-is (with TVKIT_DEBUG=1 to see replies)
 """
 
+setvbuf(stdout, nil, _IOLBF, 0) // print each line right away, also when piped
 var config = ConfigStore.load()
 var args = Array(CommandLine.arguments.dropFirst())
 if let i = args.firstIndex(of: "--host"), i + 1 < args.count {
@@ -177,7 +178,8 @@ func keyName(_ raw: String) -> RemoteKey {
     case "remap":
         guard rest.count == 2 else { fail("usage: tvctl remap <from> <to>") }
         let from = await resolveApp(rest[0]), to = await resolveApp(rest[1])
-        print("Opening \(to) whenever \(from) comes to the front. Ctrl-C to stop.")
+        let name = { (id: String) in config.knownApps.first { $0.id == id }?.name ?? id }
+        print("Opening \(name(to)) whenever \(name(from)) comes to the front. Ctrl-C to stop.")
         await makeTV().runRemaps([from: to])
 
     case "raw":

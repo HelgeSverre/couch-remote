@@ -6,11 +6,19 @@ Tested on a Samsung QE55Q65AAUXXC (2021, Tizen 6). The notes below describe that
 
 ## Use it from another package
 
+TVKit is a library product of the Couch Remote package:
+
 ```swift
-.package(path: "<path to this package>")   // TVKit is a library product of this package
-// target dependency:
-.product(name: "TVKit", package: "CouchRemote")
+// Package.swift
+dependencies: [
+    .package(url: "https://github.com/HelgeSverre/couch-remote.git", branch: "main"),
+],
+// in your target:
+dependencies: [.product(name: "TVKit", package: "couch-remote")]
 ```
+
+SwiftPM names a dependency after its repository or folder (`couch-remote`), not after the
+manifest's `name:`. With `.package(path:)`, use the folder name.
 
 ```swift
 import TVKit

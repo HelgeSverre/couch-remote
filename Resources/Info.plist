@@ -28,6 +28,10 @@
 	<true/>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_samsungmsf._tcp</string>
+	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Couch Remote controls your TV over the local network.</string>
 </dict>

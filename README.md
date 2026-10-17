@@ -43,7 +43,7 @@ Couch Remote is built from source. You need macOS 14 or later and Xcode 26 (Swif
 git clone https://github.com/HelgeSverre/couch-remote.git
 cd couch-remote
 scripts/build-app.sh --install
-open ~/Applications/"Couch Remote.app"
+open "$HOME/Applications/Couch Remote.app"
 ```
 
 `scripts/build-app.sh` builds `build/Couch Remote.app` and `build/tvctl`; `--install` also

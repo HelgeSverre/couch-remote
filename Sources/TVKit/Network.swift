@@ -1,5 +1,6 @@
 import Darwin
 import Foundation
+import Network
 
 public enum WakeOnLAN {
     /// 6 × 0xFF followed by the MAC repeated 16 times.
@@ -44,9 +45,13 @@ public struct DiscoveredTV: Sendable, Hashable, Identifiable {
 }
 
 public enum Discovery {
-    /// SSDP search for Samsung remote-control receivers, then confirms each over the REST API.
+    /// Looks for Samsung TVs two ways at once, then confirms each with the REST API:
+    /// Bonjour (`_samsungmsf._tcp`, answered by the system's mDNS service) and an SSDP search.
+    /// Some networks and macOS privacy settings block one of them; Bonjour proved the more reliable.
     public static func find(timeout: TimeInterval = 2.5) async -> [DiscoveredTV] {
-        let hosts = await Task.detached { ssdpHosts(timeout: timeout) }.value
+        async let ssdp = Task.detached { ssdpHosts(timeout: timeout) }.value
+        async let bonjour = bonjourHosts(timeout: timeout)
+        let hosts = Set(await ssdp + bonjour)
         return await withTaskGroup(of: DiscoveredTV?.self) { group in
             for host in hosts {
                 group.addTask {
@@ -58,6 +63,20 @@ public enum Discovery {
             for await tv in group { if let tv { found.append(tv) } }
             return found.sorted { $0.host < $1.host }
         }
+    }
+
+    /// IPv4 addresses of every `_samsungmsf._tcp` service (Samsung's multiscreen API, port 8001).
+    static func bonjourHosts(timeout: TimeInterval) async -> [String] {
+        let collector = BonjourCollector()
+        let browser = NWBrowser(for: .bonjour(type: "_samsungmsf._tcp", domain: nil), using: .tcp)
+        let queue = DispatchQueue(label: "TVKit.Discovery.bonjour")
+        browser.browseResultsChangedHandler = { results, _ in
+            for result in results { collector.resolve(result.endpoint, on: queue) }
+        }
+        browser.start(queue: queue)
+        try? await Task.sleep(for: .seconds(timeout))
+        browser.cancel()
+        return collector.hosts
     }
 
     static func ssdpHosts(timeout: TimeInterval) -> [String] {
@@ -100,6 +119,38 @@ public enum Discovery {
             if count > 0 { hosts.insert(String(cString: inet_ntoa(from.sin_addr))) }
         }
         return hosts.sorted()
+    }
+}
+
+/// Turns Bonjour service endpoints into IPv4 addresses by briefly connecting to each.
+private final class BonjourCollector: @unchecked Sendable {
+    private let lock = NSLock()
+    private var found = Set<String>()
+    private var started = Set<String>()
+
+    var hosts: [String] { lock.withLock { found.sorted() } }
+
+    func resolve(_ endpoint: NWEndpoint, on queue: DispatchQueue) {
+        let key = "\(endpoint)"
+        guard lock.withLock({ started.insert(key).inserted }) else { return }
+        let parameters = NWParameters.tcp
+        (parameters.defaultProtocolStack.internetProtocol as? NWProtocolIP.Options)?.version = .v4
+        let connection = NWConnection(to: endpoint, using: parameters)
+        connection.stateUpdateHandler = { [weak self, weak connection] state in
+            switch state {
+            case .ready:
+                if case .hostPort(let host, _)? = connection?.currentPath?.remoteEndpoint {
+                    let address = "\(host)".split(separator: "%").first.map(String.init) ?? "\(host)"
+                    self?.lock.withLock { _ = self?.found.insert(address) }
+                }
+                connection?.cancel()
+            case .failed, .waiting:
+                connection?.cancel()
+            default:
+                break
+            }
+        }
+        connection.start(queue: queue)
     }
 }
 
