@@ -1,4 +1,4 @@
-![Couch Remote — Your Mac is the remote.](https://raw.githubusercontent.com/HelgeSverre/couch-remote/main/docs/assets/header.png)
+![Couch Remote — Your Mac is the remote.](docs/assets/header.png)
 
 # Couch Remote
 
@@ -6,6 +6,7 @@
 [![Swift 6.2](https://img.shields.io/badge/Swift-6.2-F05138.svg)](Package.swift)
 [![macOS 14+](https://img.shields.io/badge/macOS-14%2B-000000.svg)](Package.swift)
 [![Samsung Tizen TVs](https://img.shields.io/badge/Samsung-Tizen%20TVs-1428A0.svg)](docs/PROTOCOL.md)
+[![MIT license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 A remote for Samsung smart TVs that lives in your Mac's menu bar. Open apps, steer with the
 arrow keys, set the volume, drive the TV browser's cursor with your trackpad and type into
@@ -150,4 +151,7 @@ scripts/build-app.sh
 - On macOS 26 the controls use Liquid Glass; earlier systems get the same shapes in
   translucent material.
 
-App names and icons are trademarks of their owners. Couch Remote isn't affiliated with Samsung.
+## License
+
+[MIT](LICENSE). App names and icons are trademarks of their owners. Couch Remote isn't
+affiliated with Samsung.
