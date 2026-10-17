@@ -43,6 +43,8 @@ public actor SamsungTV {
     private nonisolated let commandSink: AsyncStream<Command>.Continuation
     private var channel: RemoteChannel?
     private var connectTask: Task<Void, Error>?
+    /// Whether the TV wants the token-based socket (port 8002). Read once from the REST API.
+    private var secure: Bool?
     /// Keys sent as `Press` and not yet released.
     private var held: Set<RemoteKey> = []
 
@@ -78,7 +80,7 @@ public actor SamsungTV {
     public func connect(allowPairing: Bool = false) async throws {
         if isConnected { return }
         if let connectTask { return try await connectTask.value }
-        guard token != nil || allowPairing else { throw SamsungTVError.notPaired }
+        guard token != nil || allowPairing || secure == false else { throw SamsungTVError.notPaired }
         let task = Task { try await openChannel() }
         connectTask = task
         defer { connectTask = nil }
@@ -98,9 +100,15 @@ public actor SamsungTV {
     }
 
     private func openChannel() async throws {
-        let pairing = token == nil
+        if secure == nil {
+            // TVs without TokenAuthSupport (older firmware omits the field) take plain ws on port 8001.
+            // If the REST API doesn't answer, assume a current TV.
+            secure = (try? await TVRest.deviceInfo(host: host)).map(\.tokenAuth) ?? true
+        }
+        let secure = secure ?? true
+        let pairing = secure && token == nil
         if pairing { eventSink.yield(.awaitingApproval) }
-        let channel = RemoteChannel(host: host, clientName: clientName)
+        let channel = RemoteChannel(host: host, clientName: clientName, secure: secure)
         do {
             let issued = try await channel.connect(token: token, timeout: pairing ? 45 : 8)
             if let issued, issued != token {
@@ -228,10 +236,13 @@ public actor SamsungTV {
         try await TVRest.deviceInfo(host: host)
     }
 
-    public nonisolated func launch(appID: String) async throws {
-        guard try await TVRest.launch(host: host, appID: appID) else {
-            throw URLError(.badServerResponse)
-        }
+    /// Opens an app. Tries the REST API first (works without pairing, and is the only way on 2021 firmware,
+    /// which ignores socket launches), then the remote-control socket for firmware that refuses REST launches.
+    public func launch(appID: String) async throws {
+        if (try? await TVRest.launch(host: host, appID: appID)) == true { return }
+        try await connect()
+        guard let channel else { throw RemoteChannelError.notConnected }
+        try channel.launch(appID: appID)
     }
 
     public nonisolated func status(ofApp appID: String) async throws -> AppStatus? {

@@ -35,13 +35,17 @@ public enum RemoteEvent: Sendable {
     case disconnected(String?)
 }
 
-/// The TV's remote-control WebSocket (`wss://<tv>:8002/api/v2/channels/samsung.remote.control`).
+/// The TV's remote-control WebSocket.
 ///
-/// The first connection without a token makes the TV show an Allow prompt; accepting it returns a token
-/// that later connections pass along. One instance is one connection: after `close()` make a new one.
+/// TVs that report `TokenAuthSupport: true` (2018 on) use `wss://<tv>:8002/...` with a token: the first
+/// connection makes the TV show an Allow prompt, and accepting it returns a token that later connections
+/// pass along. Older Tizen TVs use plain `ws://<tv>:8001/...` without a token (`secure: false`).
+/// One instance is one connection: after `close()` make a new one.
 public final class RemoteChannel: NSObject, @unchecked Sendable {
     public let host: String
     public let clientName: String
+    /// `wss` on 8002 with a token, or plain `ws` on 8001 for TVs without token auth.
+    public let secure: Bool
     public let events: AsyncStream<RemoteEvent>
 
     private let continuation: AsyncStream<RemoteEvent>.Continuation
@@ -52,9 +56,10 @@ public final class RemoteChannel: NSObject, @unchecked Sendable {
     private var connected = false
     private var pingTimer: DispatchSourceTimer?
 
-    public init(host: String, clientName: String = "Couch Remote") {
+    public init(host: String, clientName: String = "Couch Remote", secure: Bool = true) {
         self.host = host
         self.clientName = clientName
+        self.secure = secure
         (events, continuation) = AsyncStream.makeStream(of: RemoteEvent.self, bufferingPolicy: .bufferingNewest(256))
         super.init()
     }
@@ -63,7 +68,7 @@ public final class RemoteChannel: NSObject, @unchecked Sendable {
 
     /// Opens the socket and waits until the TV accepts it. Returns the token the TV sent, if any.
     public func connect(token: String?, timeout: TimeInterval = 8) async throws -> String? {
-        guard let url = Self.url(host: host, clientName: clientName, token: token) else {
+        guard let url = Self.url(host: host, clientName: clientName, token: token, secure: secure) else {
             throw RemoteChannelError.badAddress
         }
         return try await withCheckedThrowingContinuation { cont in
@@ -170,14 +175,14 @@ public final class RemoteChannel: NSObject, @unchecked Sendable {
 
     // MARK: Internals
 
-    static func url(host: String, clientName: String, token: String?) -> URL? {
+    static func url(host: String, clientName: String, token: String?, secure: Bool = true) -> URL? {
         var comps = URLComponents()
-        comps.scheme = "wss"
+        comps.scheme = secure ? "wss" : "ws"
         comps.host = host
-        comps.port = 8002
+        comps.port = secure ? 8002 : 8001
         comps.path = "/api/v2/channels/samsung.remote.control"
         var items = [URLQueryItem(name: "name", value: Data(clientName.utf8).base64EncodedString())]
-        if let token { items.append(URLQueryItem(name: "token", value: token)) }
+        if secure, let token { items.append(URLQueryItem(name: "token", value: token)) }
         comps.queryItems = items
         return comps.url
     }

@@ -16,15 +16,15 @@ public struct TVConfig: Codable, Equatable, Sendable {
     public var customAppIDs: [String]
     /// Result of the last app scan, so the popover has apps to show right away.
     public var knownApps: [TVApp]
-    /// Source app ID → app to open instead. Repurposes the remote's hard-wired app buttons.
-    public var remaps: [String: String]
+    /// "When this app opens, open that one instead", to repurpose the remote's hard-wired app buttons.
+    public var remaps: [AppRemap]
 
     public init() {
         appOrder = []
         hiddenApps = []
         customAppIDs = []
         knownApps = []
-        remaps = [:]
+        remaps = []
     }
 
     public init(from decoder: Decoder) throws {
@@ -38,36 +38,38 @@ public struct TVConfig: Codable, Equatable, Sendable {
         hiddenApps = try c.decodeIfPresent([String].self, forKey: .hiddenApps) ?? []
         customAppIDs = try c.decodeIfPresent([String].self, forKey: .customAppIDs) ?? []
         knownApps = try c.decodeIfPresent([TVApp].self, forKey: .knownApps) ?? []
-        remaps = try c.decodeIfPresent([String: String].self, forKey: .remaps) ?? [:]
-    }
-}
-
-/// App buttons printed on the 2021 Samsung remote. Their target can be changed through `TVConfig.remaps`.
-public enum RemoteAppButton: String, CaseIterable, Sendable, Identifiable {
-    case netflix
-    case primeVideo
-    /// Only remappable while Samsung TV Plus is enabled on the TV; when it's disabled the button opens nothing.
-    case samsungTVPlus
-
-    public var id: String { rawValue }
-    public var title: String {
-        switch self {
-        case .netflix: "Netflix button"
-        case .primeVideo: "Prime Video button"
-        case .samsungTVPlus: "Samsung TV Plus button"
+        if let rules = try? c.decodeIfPresent([AppRemap].self, forKey: .remaps) {
+            remaps = rules
+        } else if let table = try? c.decodeIfPresent([String: String].self, forKey: .remaps) {
+            // Early configs stored a plain source → target table.
+            remaps = table.sorted { $0.key < $1.key }.map { AppRemap(fromAppID: $0.key, toAppID: $0.value) }
+        } else {
+            remaps = []
         }
     }
 
-    /// The app the button opens on this TV.
-    public var appID: String {
-        switch self {
-        case .netflix: KnownApps.netflix
-        case .primeVideo: KnownApps.primeVideo
-        case .samsungTVPlus: KnownApps.samsungTVPlus
-        }
+    /// Source app ID → target app ID, for `SamsungTV.runRemaps`. The first rule for a source wins.
+    public var remapTable: [String: String] {
+        Dictionary(remaps.map { ($0.fromAppID, $0.toAppID) }, uniquingKeysWith: { first, _ in first })
     }
 }
 
+/// One remap rule. Both IDs come from the apps scanned on the user's own TV, so they match that TV
+/// whatever its model year or region (the same app can have different IDs on different TVs).
+public struct AppRemap: Codable, Equatable, Sendable, Identifiable {
+    public var id: UUID
+    public var fromAppID: String
+    public var toAppID: String
+
+    public init(id: UUID = UUID(), fromAppID: String, toAppID: String) {
+        self.id = id
+        self.fromAppID = fromAppID
+        self.toAppID = toAppID
+    }
+}
+
+/// App IDs as seen on a 2021 European model (Tizen 6). The same app can have a different ID on other
+/// model years and regions, so prefer IDs from `SamsungTV.installedApps()` for anything user-facing.
 public enum KnownApps {
     public static let youtube = "111299001912"
     public static let primeVideo = "3201910019365"

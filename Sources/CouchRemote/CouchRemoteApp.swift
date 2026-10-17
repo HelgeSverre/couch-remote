@@ -40,6 +40,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if CommandLine.arguments.contains("--window") || CommandLine.arguments.contains("--preview-window") {
             showRemoteWindow()
         }
+        if CommandLine.arguments.contains("--settings") { showSettingsPreview() }
+    }
+
+    /// Development aid: the Settings form in a plain window, for screenshots. (macOS ignores
+    /// `showSettingsWindow:` for SwiftUI apps; in the app, Settings opens from the ⋯ menu.)
+    @MainActor
+    private var settingsPreview: NSWindow?
+
+    @MainActor
+    private func showSettingsPreview() {
+        let hosting = NSHostingView(rootView: SettingsView().environment(model))
+        let window = NSWindow(contentRect: NSRect(origin: .zero, size: hosting.fittingSize),
+                              styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        window.title = "Settings"
+        window.contentView = hosting
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate()
+        settingsPreview = window
+        print("settings window \(window.windowNumber)")
+        fflush(stdout)
     }
 
     /// Never leave the Mac cursor frozen if the app quits while the trackpad has it.

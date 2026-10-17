@@ -77,23 +77,37 @@ struct SettingsView: View {
     private var remapSection: some View {
         let apps = model.config.knownApps.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         return Section {
-            ForEach(RemoteAppButton.allCases) { button in
-                Picker(button.title, selection: Binding(
-                    get: { model.config.remaps[button.appID] },
-                    set: { model.setRemap(button, to: $0) }
-                )) {
-                    Text("Opens \(model.name(ofApp: button.appID))").tag(String?.none)
-                    Divider()
-                    ForEach(apps.filter { $0.id != button.appID }) { app in
-                        Text(app.name).tag(Optional(app.id))
+            ForEach(model.config.remaps) { rule in
+                HStack(spacing: 8) {
+                    Picker("When", selection: Binding(
+                        get: { rule.fromAppID },
+                        set: { model.updateRemap(rule.id, from: $0) }
+                    )) {
+                        ForEach(apps) { Text($0.name).tag($0.id) }
                     }
+                    Image(systemName: "arrow.right").foregroundStyle(.secondary)
+                    Picker("Open instead", selection: Binding(
+                        get: { rule.toAppID },
+                        set: { model.updateRemap(rule.id, to: $0) }
+                    )) {
+                        ForEach(apps.filter { $0.id != rule.fromAppID }) { Text($0.name).tag($0.id) }
+                    }
+                    .labelsHidden()
+                    Button {
+                        model.removeRemap(rule.id)
+                    } label: {
+                        Image(systemName: "minus.circle.fill").foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Remove this rule")
                 }
             }
+            Button("Add Rule", action: model.addRemap)
+                .disabled(apps.count < 2)
         } header: {
             Text("Remote Buttons")
         } footer: {
-            Text("While Couch Remote runs, pressing a remapped button opens the app you chose. The button's own app shows for about a second first. Samsung TV Plus must be enabled on the TV for its button to be remapped.")
-                .foregroundStyle(.secondary)
+            footer("Repurpose an app button on your TV remote: when the left app opens, the right one opens instead. Works while Couch Remote is running.")
         }
     }
 
@@ -131,8 +145,7 @@ struct SettingsView: View {
         } header: {
             Text("Apps")
         } footer: {
-            Text("Couch Remote finds apps by checking about 200 known app IDs. Add an ID here for an app it missed. Hidden apps are listed above with a Show button.")
-                .foregroundStyle(.secondary)
+            footer("Add an app the scan missed by its ID. Hidden apps are listed here.")
         }
     }
 
@@ -158,5 +171,13 @@ struct SettingsView: View {
                 .buttonStyle(.link)
             }
         }
+    }
+
+    /// Section footer: secondary, left-aligned (grouped forms otherwise right-align wrapped footer text).
+    private func footer(_ text: String) -> some View {
+        Text(text)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

@@ -31,6 +31,17 @@ final class TVKitTests: XCTestCase {
         XCTAssertNil(RenderingControl.value(of: "CurrentMute", in: xml))
     }
 
+    func testFindsRenderingControlPathInDescription() {
+        let xml = """
+        <service><serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType>
+        <controlURL>/upnp/control/ConnectionManager1</controlURL></service>
+        <service><serviceType>urn:schemas-upnp-org:service:RenderingControl:1</serviceType>
+        <SCPDURL>/RenderingControl_1.xml</SCPDURL><controlURL>/upnp/control/RenderingControl1</controlURL></service>
+        """
+        XCTAssertEqual(RenderingControl.renderingControlPath(inDescription: xml), "/upnp/control/RenderingControl1")
+        XCTAssertEqual(RenderingControl.renderingControlPath(inDescription: "<root/>"), nil)
+    }
+
     func testInstalledAppParsing() {
         let app = TVApp(json: ["appId": "111299001912", "name": "YouTube", "app_type": 2, "icon": "/opt/icon.png"])
         XCTAssertEqual(app?.id, "111299001912")
@@ -41,16 +52,30 @@ final class TVKitTests: XCTestCase {
     }
 
     func testChannelURLCarriesNameAndToken() throws {
-        let url = try XCTUnwrap(RemoteChannel.url(host: "192.168.10.170", clientName: "Couch Remote", token: "123"))
+        let url = try XCTUnwrap(RemoteChannel.url(host: "192.168.10.57", clientName: "Couch Remote", token: "123"))
         XCTAssertEqual(url.absoluteString,
-                       "wss://192.168.10.170:8002/api/v2/channels/samsung.remote.control?name=Q291Y2ggUmVtb3Rl&token=123")
+                       "wss://192.168.10.57:8002/api/v2/channels/samsung.remote.control?name=Q291Y2ggUmVtb3Rl&token=123")
+        // Older TVs without token auth: plain ws on 8001, no token.
+        let legacy = try XCTUnwrap(RemoteChannel.url(host: "192.168.10.57", clientName: "Couch Remote", token: "123", secure: false))
+        XCTAssertEqual(legacy.absoluteString,
+                       "ws://192.168.10.57:8001/api/v2/channels/samsung.remote.control?name=Q291Y2ggUmVtb3Rl")
     }
 
     func testConfigDecodesOlderFiles() throws {
-        let config = try JSONDecoder().decode(TVConfig.self, from: Data(#"{"host":"192.168.10.170"}"#.utf8))
-        XCTAssertEqual(config.host, "192.168.10.170")
+        let config = try JSONDecoder().decode(TVConfig.self, from: Data(#"{"host":"192.168.10.57"}"#.utf8))
+        XCTAssertEqual(config.host, "192.168.10.57")
         XCTAssertEqual(config.appOrder, [])
-        XCTAssertEqual(config.remaps, [:])
+        XCTAssertEqual(config.remaps, [])
+    }
+
+    func testConfigMigratesRemapTable() throws {
+        let json = #"{"remaps":{"3201910019365":"111299001912"}}"#
+        let config = try JSONDecoder().decode(TVConfig.self, from: Data(json.utf8))
+        XCTAssertEqual(config.remaps.count, 1)
+        XCTAssertEqual(config.remapTable, ["3201910019365": "111299001912"])
+        // Round trip keeps the new format.
+        let again = try JSONDecoder().decode(TVConfig.self, from: JSONEncoder().encode(config))
+        XCTAssertEqual(again.remaps, config.remaps)
     }
 
     func testCatalogRanksKnownAppsFirstAndDedupesIDs() {

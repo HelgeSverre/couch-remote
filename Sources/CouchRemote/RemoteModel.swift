@@ -164,10 +164,12 @@ final class RemoteModel {
             link = .offline
             return
         }
-        guard config.token != nil || allowPairing else { return }
         if link != .waitingForApproval { link = .connecting }
         do {
             try await tv.connect(allowPairing: allowPairing)
+        } catch SamsungTVError.notPaired {
+            // Needs the Allow prompt, which only an explicit pairing may trigger.
+            link = .failed("Couch Remote isn't paired with this TV. Choose Pair Again, then press Allow on the TV.")
         } catch RemoteChannelError.unauthorized {
             link = .failed("The TV declined. Choose Pair Again, then press Allow on the TV.")
         } catch {
@@ -560,9 +562,27 @@ final class RemoteModel {
         persist()
     }
 
-    /// `nil` restores the button's own app.
-    func setRemap(_ button: RemoteAppButton, to targetID: String?) {
-        config.remaps[button.appID] = targetID
+    /// Adds a rule, starting from Prime Video → YouTube when both are installed, else the first two apps.
+    func addRemap() {
+        let apps = config.knownApps
+        guard apps.count >= 2 else { return }
+        let from = apps.first { $0.name == "Prime Video" } ?? apps[0]
+        let to = apps.first { $0.name == "YouTube" && $0.id != from.id } ?? apps.first { $0.id != from.id }!
+        config.remaps.append(AppRemap(fromAppID: from.id, toAppID: to.id))
+        persist()
+        updateRemaps()
+    }
+
+    func updateRemap(_ id: UUID, from: String? = nil, to: String? = nil) {
+        guard let index = config.remaps.firstIndex(where: { $0.id == id }) else { return }
+        if let from { config.remaps[index].fromAppID = from }
+        if let to { config.remaps[index].toAppID = to }
+        persist()
+        updateRemaps()
+    }
+
+    func removeRemap(_ id: UUID) {
+        config.remaps.removeAll { $0.id == id }
         persist()
         updateRemaps()
     }
@@ -570,7 +590,7 @@ final class RemoteModel {
     private func updateRemaps() {
         remapTask?.cancel()
         guard let tv, !config.remaps.isEmpty else { return }
-        let remaps = config.remaps
+        let remaps = config.remapTable
         remapTask = Task { await tv.runRemaps(remaps) }
     }
 

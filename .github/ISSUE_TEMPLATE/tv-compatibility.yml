@@ -1,0 +1,78 @@
+name: TV compatibility
+description: Couch Remote or TVKit doesn't work (fully) with your Samsung TV
+title: "[TV] <model>: <what doesn't work>"
+labels: ["tv-compatibility"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Samsung TVs differ by model year and region, and every report helps support more of them.
+        Couch Remote is tested on a QE55Q65AAUXXC (2021, Tizen 6).
+  - type: input
+    id: model
+    attributes:
+      label: TV model
+      description: Full model code, from the sticker on the back or Settings → Support → About This TV.
+      placeholder: QE55Q65AAUXXC
+    validations:
+      required: true
+  - type: input
+    id: year
+    attributes:
+      label: Model year
+      description: The letter after the series often tells it (…A… = 2021, …B… = 2022, …C… = 2023). Leave blank if unsure.
+      placeholder: "2021"
+  - type: input
+    id: region
+    attributes:
+      label: Country or region
+      placeholder: Norway
+  - type: input
+    id: firmware
+    attributes:
+      label: TV software version
+      description: Settings → Support → About This TV → Software Version.
+      placeholder: T-XXXXXXX-0000.0
+  - type: textarea
+    id: tvctl-info
+    attributes:
+      label: Output of `tvctl info`
+      description: Run `swift run tvctl --host <tv ip> info` from the repo, or `build/tvctl info` after `scripts/build-app.sh`. Remove the MAC address if you prefer.
+      render: text
+    validations:
+      required: true
+  - type: checkboxes
+    id: broken
+    attributes:
+      label: What doesn't work?
+      options:
+        - label: Finding the TV
+        - label: Pairing (no Allow prompt, or it fails)
+        - label: Remote keys (arrows, OK, Back, Home…)
+        - label: Holding keys
+        - label: Apps missing from the list
+        - label: Opening apps
+        - label: App icons
+        - label: Volume slider or mute
+        - label: Turning the TV on
+        - label: Trackpad / pointer
+        - label: Typing on the TV
+        - label: Remote button rules
+        - label: Something else
+  - type: textarea
+    id: details
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what the TV did. Error messages from the popover or tvctl help a lot.
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "15.6"
+  - type: input
+    id: version
+    attributes:
+      label: Couch Remote version or commit
+      placeholder: 0.1.0 or the output of `git rev-parse --short HEAD`

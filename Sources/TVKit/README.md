@@ -1,6 +1,8 @@
 # TVKit
 
-Swift library and CLI (`tvctl`) for controlling Samsung Tizen TVs on the local network. Built and tested against a 2021 QE55Q65AAUXXC (Tizen 6). No dependencies.
+Swift library and CLI (`tvctl`) for controlling Samsung Tizen TVs on the local network. No dependencies.
+
+Tested on a Samsung QE55Q65AAUXXC (2021, Tizen 6). The notes below describe that TV; where other model years are known to differ, TVKit adapts (see "Other model years").
 
 ## Use it from another package
 
@@ -13,7 +15,7 @@ Swift library and CLI (`tvctl`) for controlling Samsung Tizen TVs on the local n
 ```swift
 import TVKit
 
-let tv = SamsungTV(host: "192.168.10.170", token: savedToken)
+let tv = SamsungTV(host: "192.168.10.57", token: savedToken)
 try await tv.connect(allowPairing: true)   // first time: press Allow on the TV
 let token = await tv.token                 // store this
 
@@ -34,14 +36,26 @@ let front = await tv.statuses(ofApps: apps.map(\.id)).first(where: \.visible)
 
 ## What the TV exposes
 
+Full message formats, tested behavior and sdb details: [docs/PROTOCOL.md](../../docs/PROTOCOL.md).
+
 | Port | Interface | Pairing | Used for |
 |---|---|---|---|
 | 8001 | REST (`/api/v2/`) | no | device info, app state, launching apps |
-| 8002 | WebSocket `samsung.remote.control` (TLS, self-signed) | yes, Allow prompt on TV | remote keys, text input |
+| 8002 | WebSocket `samsung.remote.control` (TLS, self-signed) | yes, Allow prompt on TV | remote keys, text input, pointer |
 | 9197 | UPnP RenderingControl | no | volume and mute |
 | 8080 | DIAL | no | cast-style app info (not used) |
 | 26101 | sdb (Smart Development Bridge, adb protocol) | Developer Mode, host IP set on TV | exact app list, file copies, starting system apps |
 | — | Wake-on-LAN to the Wi-Fi MAC | no | power on from standby |
+
+## Other model years
+
+These come from other projects' reports, not from testing here:
+
+- **Remote socket:** TVs that report `TokenAuthSupport: "true"` (about 2018 on) use `wss://…:8002` with a token. Older Tizen TVs omit it or report false; `SamsungTV` then uses plain `ws://…:8001` without pairing. Pre-2016 (non-Tizen) TVs use a different protocol and aren't supported.
+- **Launching:** `SamsungTV.launch` tries `POST /api/v2/applications/{id}` and falls back to the socket's `ed.apps.launch` when the TV refuses it.
+- **Volume:** the RenderingControl address is read from `http://<tv>:9197/dmr`, with `/upnp/control/RenderingControl1` as fallback. With a soundbar on HDMI ARC the TV's own volume may not apply.
+- **App IDs** differ by model year and region (Netflix is `11101200001` on older TVs, `3201907018807` on newer ones). Always take IDs from `installedApps()` on the TV at hand; `KnownApps` lists what the tested TV uses.
+- **Wake-on-LAN** sends to the Wi-Fi MAC the TV reports. A TV on Ethernet needs its Ethernet MAC, and the TV must have "Power On with Mobile" enabled.
 
 ## Firmware quirks (2021 / Tizen 6)
 
@@ -59,7 +73,7 @@ let front = await tv.statuses(ofApps: apps.map(\.id)).first(where: \.visible)
 With Developer Mode on (Apps screen → 1 2 3 4 5 → On, Host PC IP = your Mac, restart the TV), `SDB` talks to the TV's sdb daemon directly. No Tizen Studio needed: sdb is Tizen's fork of adb with the same wire protocol, and the TV asks for no authentication.
 
 ```swift
-let sdb = SDB(host: "192.168.10.170")
+let sdb = SDB(host: "192.168.10.57")
 let apps = try await sdb.installedApps()        // ID, Tizen ID, install date, use count
 let tile = try await sdb.pull("/opt/share/webappservice/apps_icon/all/111399002181/304x304.png")
 try await sdb.execute("org.volt.apps")           // open the Apps screen
