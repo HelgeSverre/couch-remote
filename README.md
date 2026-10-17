@@ -19,10 +19,9 @@ ships in this package, and `tvctl`, its command-line twin.
 [Compatibility](#compatibility) · [Protocol notes](docs/PROTOCOL.md)
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshot-dark.png">
-    <img src="docs/assets/screenshot-light.png" width="408" alt="Couch Remote: TV status, a grid of app tiles, a D-pad with Back, Home, Source, Play/Pause, Info and trackpad buttons, a volume slider with channel buttons, and a field for typing on the TV">
-  </picture>
+  <img src="docs/assets/screenshot-light.png" width="380" alt="Couch Remote in light mode: TV status, a grid of app tiles, a D-pad with Back, Home, Source, Play/Pause, Info and trackpad buttons, a volume slider with channel buttons, and a field for typing on the TV">
+  &nbsp;
+  <img src="docs/assets/screenshot-dark.png" width="380" alt="Couch Remote in dark mode, with the same layout">
 </p>
 
 ## Features
