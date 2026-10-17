@@ -13,7 +13,8 @@ arrow keys, set the volume, drive the TV browser's cursor with your trackpad and
 its search fields, all over your local network.
 
 Built on [TVKit](Sources/TVKit), a dependency-free Swift library for Samsung Tizen TVs that
-ships in this package, and `tvctl`, its command-line twin.
+ships in this package. The package also includes `tvctl` ("TV control"), a command-line tool
+that does the same things from Terminal.
 
 [Install](#install) · [Using it](#using-it) · [tvctl](#tvctl) · [TVKit](#tvkit) ·
 [Compatibility](#compatibility) · [Protocol notes](docs/PROTOCOL.md)
@@ -87,7 +88,14 @@ running, and the first app shows for about a second before the switch.
 
 ## tvctl
 
-`tvctl` uses the same settings and pairing as the app.
+`tvctl` (short for "TV control") is a command-line tool for the same TV. It sends keys,
+opens apps, sets the volume and finds or pairs TVs: everything the app does, minus the
+window. Use it in shell scripts, from Shortcuts or Raycast, or to see what a TV supports when
+something doesn't work. It reads the same settings file as the app, so once either one is
+paired, both are.
+
+`scripts/build-app.sh` puts a ready-to-run copy in `build/tvctl`; copy it anywhere on your
+`PATH` to use it as `tvctl`. From the repo you can also run it with `swift run tvctl`:
 
 ```sh
 swift run tvctl discover               # find TVs and remember the first
