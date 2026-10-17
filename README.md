@@ -144,17 +144,28 @@ with your model and the output of `tvctl info`.
 
 ## Development
 
-```sh
-swift build
-swift test
-scripts/build-app.sh
-```
+Common tasks are in the [justfile](justfile); run `just` to list them. The checks:
 
-- `--window` opens the remote window at launch and `--settings` the Settings form; add
-  `--light` or `--dark` to force an appearance. The README screenshots use these.
+| Command | Runs |
+|---|---|
+| `just lint` | `swift format lint --strict` and `swiftlint lint --strict`; any warning fails |
+| `just fmt` | `swift format format --in-place` and `swiftlint lint --fix` |
+| `just test` | `swift test` |
+| `just check` | lint, tests and a release build of the app; run before pushing |
+
+CI runs the lint and test steps on every pull request and push to `main`.
+
+Formatting follows [.swift-format](.swift-format) (4-space indent, 120 columns); lint rules are
+in [.swiftlint.yml](.swiftlint.yml). `swift format` ships with Xcode; SwiftLint comes from
+Homebrew (`brew install swiftlint`).
+
+Other recipes: `just run --window` builds and launches the app (also `--settings`, `--light`,
+`--dark`), `just tv info` runs tvctl, `just install` puts the app in `~/Applications` and
+`tvctl` in `~/.local/bin`, and `just screenshots` retakes the README screenshots.
+
 - `TVKIT_DEBUG=1` prints every WebSocket message from the TV, for example with `tvctl raw`.
 - App icons live in `Sources/TVKit/Resources/AppIcons`. Icons for installed apps are the
-  TV's own Smart Hub tiles; `scripts/fetch-icons.sh` downloads App Store icons for the rest.
+  TV's own Smart Hub tiles; `just icons` downloads App Store icons for the rest.
 - On macOS 26 the controls use Liquid Glass; earlier systems get the same shapes in
   translucent material.
 

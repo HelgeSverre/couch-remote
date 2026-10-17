@@ -1,0 +1,31 @@
+# SwiftLint for Couch Remote. Formatting is swift-format's job (.swift-format);
+# this config keeps SwiftLint on the rules that catch real mistakes.
+
+disabled_rules:
+  - trailing_comma            # .swift-format adds trailing commas to multi-line collections
+  - line_length               # .swift-format enforces lineLength: 120
+  - opening_brace             # swift-format decides brace placement
+  - closure_parameter_position # swift-format may wrap `{ [weak self] _ in` differently
+  - identifier_name           # dx/dy, fd, id and similar short names are clear here
+  - type_body_length          # RemoteModel is one deliberately large state object
+  - file_length
+  - function_body_length
+  - cyclomatic_complexity     # key handling and protocol parsing branch by design
+  - optional_data_string_conversion  # protocol text decodes leniently on purpose (String(decoding:as:))
+
+opt_in_rules:
+  - empty_count
+  - explicit_init
+  - first_where
+  - sorted_first_last
+  - redundant_nil_coalescing
+  - weak_delegate
+  - fatal_error_message
+
+excluded:
+  - .build
+  - build
+  - docs
+
+# Warnings fail `just lint` (and CI).
+strict: true

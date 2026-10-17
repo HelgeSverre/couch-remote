@@ -4,26 +4,26 @@ import TVKit
 // tvctl: command-line twin of Couch Remote. Shares its config file (and therefore its pairing token).
 
 let usage = """
-usage: tvctl [--host <ip>] <command> [args]
+    usage: tvctl [--host <ip>] <command> [args]
 
-  discover              find Samsung TVs on this network and remember the first
-  use <ip>              remember a TV address
-  info                  model, power state, developer mode
-  pair [--again]        connect and wait for Allow on the TV; saves the token
-  key <KEY> [...]       send remote keys, e.g. key VOLUP VOLUP or key KEY_HOME
-  hold <KEY> <seconds>  hold a key down, e.g. hold RIGHT 1.5 to keep moving right
-  apps                  find installed apps (checks known app IDs)
-  launch <id|name>      open an app
-  status <id>           running / in-front state of an app
-  volume [0-100]        read or set volume
-  mute [on|off]         read or set mute
-  text <words...>       type into the TV's on-screen keyboard
-  remap <from> <to>     open app <to> whenever app <from> comes to the front (runs until Ctrl-C)
-  wake                  send Wake-on-LAN to the TV's Wi-Fi MAC
-  raw '<json>' [...]    send WebSocket messages as-is (with TVKIT_DEBUG=1 to see replies)
-"""
+      discover              find Samsung TVs on this network and remember the first
+      use <ip>              remember a TV address
+      info                  model, power state, developer mode
+      pair [--again]        connect and wait for Allow on the TV; saves the token
+      key <KEY> [...]       send remote keys, e.g. key VOLUP VOLUP or key KEY_HOME
+      hold <KEY> <seconds>  hold a key down, e.g. hold RIGHT 1.5 to keep moving right
+      apps                  find installed apps (checks known app IDs)
+      launch <id|name>      open an app
+      status <id>           running / in-front state of an app
+      volume [0-100]        read or set volume
+      mute [on|off]         read or set mute
+      text <words...>       type into the TV's on-screen keyboard
+      remap <from> <to>     open app <to> whenever app <from> comes to the front (runs until Ctrl-C)
+      wake                  send Wake-on-LAN to the TV's Wi-Fi MAC
+      raw '<json>' [...]    send WebSocket messages as-is (with TVKIT_DEBUG=1 to see replies)
+    """
 
-setvbuf(stdout, nil, _IOLBF, 0) // print each line right away, also when piped
+setvbuf(stdout, nil, _IOLBF, 0)  // print each line right away, also when piped
 var config = ConfigStore.load()
 var args = Array(CommandLine.arguments.dropFirst())
 if let i = args.firstIndex(of: "--host"), i + 1 < args.count {
@@ -98,15 +98,16 @@ func keyName(_ raw: String) -> RemoteKey {
 
     case "info":
         let info = try await makeTV().info()
-        print("""
-        name        \(info.name)
-        model       \(info.modelName) (\(info.model ?? "?"))
-        power       \(info.powerState ?? "?")
-        os          \(info.os ?? "?")
-        wifi mac    \(info.wifiMAC ?? "?")
-        developer   \(info.developerMode ? "on, host \(info.developerIP ?? "?")" : "off")
-        paired      \(config.token == nil ? "no" : "yes")
-        """)
+        print(
+            """
+            name        \(info.name)
+            model       \(info.modelName) (\(info.model ?? "?"))
+            power       \(info.powerState ?? "?")
+            os          \(info.os ?? "?")
+            wifi mac    \(info.wifiMAC ?? "?")
+            developer   \(info.developerMode ? "on, host \(info.developerIP ?? "?")" : "off")
+            paired      \(config.token == nil ? "no" : "yes")
+            """)
         if config.wifiMAC == nil, let mac = info.wifiMAC {
             config.wifiMAC = mac
             save()
@@ -177,7 +178,8 @@ func keyName(_ raw: String) -> RemoteKey {
 
     case "remap":
         guard rest.count == 2 else { fail("usage: tvctl remap <from> <to>") }
-        let from = await resolveApp(rest[0]), to = await resolveApp(rest[1])
+        let from = await resolveApp(rest[0])
+        let to = await resolveApp(rest[1])
         let name = { (id: String) in config.knownApps.first { $0.id == id }?.name ?? id }
         print("Opening \(name(to)) whenever \(name(from)) comes to the front. Ctrl-C to stop.")
         await makeTV().runRemaps([from: to])

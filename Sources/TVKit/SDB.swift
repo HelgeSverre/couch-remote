@@ -8,7 +8,8 @@ public enum SDBError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .unreachable(let detail): "Can't reach the TV's developer port (26101): \(detail). Is Developer Mode on, with this Mac's IP as Host PC IP?"
+        case .unreachable(let detail):
+            "Can't reach the TV's developer port (26101): \(detail). Is Developer Mode on, with this Mac's IP as Host PC IP?"
         case .protocolError(let detail): "Unexpected reply from the TV: \(detail)"
         case .remote(let message): message
         }
@@ -42,7 +43,9 @@ public struct SDB: Sendable {
     /// Starts any app by its Tizen ID, system apps included (`org.volt.apps` is the Apps screen).
     public func execute(_ tizenAppID: String) async throws {
         let output = try await shell("0 execute \(tizenAppID)")
-        guard output.contains("successfully launched") else { throw SDBError.remote(output.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        guard output.contains("successfully launched") else {
+            throw SDBError.remote(output.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
     }
 
     /// Every user-facing app with its WAS ID, Tizen ID, install date and use count (`0 vd_applist`).
@@ -76,15 +79,16 @@ public struct InstalledApp: Sendable, Equatable {
         var fields: [String: String] = [:]
         func flush() {
             guard let id = fields["app_id"] else { return }
-            apps.append(InstalledApp(
-                id: id,
-                title: fields["app_title"] ?? id,
-                tizenID: fields["app_tizen_id"] ?? "",
-                version: fields["app_version"] ?? "",
-                installDate: fields["install_date"] ?? "",
-                useCount: Int(fields["use_count"] ?? "") ?? 0,
-                iconDirectory: fields["app_panel_icon_path"] ?? ""
-            ))
+            apps.append(
+                InstalledApp(
+                    id: id,
+                    title: fields["app_title"] ?? id,
+                    tizenID: fields["app_tizen_id"] ?? "",
+                    version: fields["app_version"] ?? "",
+                    installDate: fields["install_date"] ?? "",
+                    useCount: Int(fields["use_count"] ?? "") ?? 0,
+                    iconDirectory: fields["app_panel_icon_path"] ?? ""
+                ))
         }
         // Lines look like "--------------app_title   =Netflix-------------".
         for line in output.split(separator: "\n") {
@@ -178,7 +182,7 @@ final class SDBConnection: @unchecked Sendable {
                     return file
                 }
                 guard buffer.count >= 8 + length else { break }
-                let body = buffer.subdata(in: buffer.startIndex + 8 ..< buffer.startIndex + 8 + length)
+                let body = buffer.subdata(in: buffer.startIndex + 8..<buffer.startIndex + 8 + length)
                 buffer.removeFirst(8 + length)
                 switch id {
                 case "DATA": file.append(body)
@@ -208,12 +212,20 @@ final class SDBConnection: @unchecked Sendable {
         try writeAll(packet)
     }
 
-    private func receive() throws -> (command: String, arg0: UInt32, arg1: UInt32, payload: Data) {
+    /// One adb-protocol message: a 4-letter command, two arguments and a payload.
+    private struct Message {
+        let command: String
+        let arg0: UInt32
+        let arg1: UInt32
+        let payload: Data
+    }
+
+    private func receive() throws -> Message {
         let header = try readExactly(24)
         let command = String(decoding: header.prefix(4), as: UTF8.self)
         let length = Int(readLE32(header, at: 12))
         let payload = length > 0 ? try readExactly(length) : Data()
-        return (command, readLE32(header, at: 4), readLE32(header, at: 8), payload)
+        return Message(command: command, arg0: readLE32(header, at: 4), arg1: readLE32(header, at: 8), payload: payload)
     }
 
     // MARK: Socket
@@ -267,6 +279,6 @@ private func le32(_ value: UInt32) -> Data {
 }
 
 private func readLE32(_ data: Data, at offset: Int) -> UInt32 {
-    data.subdata(in: data.startIndex + offset ..< data.startIndex + offset + 4)
+    data.subdata(in: data.startIndex + offset..<data.startIndex + offset + 4)
         .withUnsafeBytes { UInt32(littleEndian: $0.loadUnaligned(as: UInt32.self)) }
 }

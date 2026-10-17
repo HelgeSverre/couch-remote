@@ -63,9 +63,11 @@ struct WindowVisibilityReader: NSViewRepresentable {
                 NSWindow.didResignKeyNotification,
             ]
             for name in names {
-                observers.append(NotificationCenter.default.addObserver(forName: name, object: window, queue: .main) { [weak self] _ in
-                    self?.report()
-                })
+                observers.append(
+                    NotificationCenter.default.addObserver(forName: name, object: window, queue: .main) {
+                        [weak self] _ in
+                        self?.report()
+                    })
             }
             report()
         }

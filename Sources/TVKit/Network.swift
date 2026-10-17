@@ -85,14 +85,14 @@ public enum Discovery {
         defer { Darwin.close(fd) }
 
         let search = """
-        M-SEARCH * HTTP/1.1\r
-        HOST: 239.255.255.250:1900\r
-        MAN: "ssdp:discover"\r
-        MX: 2\r
-        ST: urn:samsung.com:device:RemoteControlReceiver:1\r
-        \r
+            M-SEARCH * HTTP/1.1\r
+            HOST: 239.255.255.250:1900\r
+            MAN: "ssdp:discover"\r
+            MX: 2\r
+            ST: urn:samsung.com:device:RemoteControlReceiver:1\r
+            \r
 
-        """
+            """
         let message = Array(search.utf8)
         var group = sockaddr_in.ipv4("239.255.255.250", port: 1900)
         for _ in 0..<2 {

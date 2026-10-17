@@ -44,11 +44,12 @@ public struct RenderingControl: Sendable {
         request.httpMethod = "POST"
         request.setValue("text/xml; charset=\"utf-8\"", forHTTPHeaderField: "Content-Type")
         request.setValue("\"\(service)#\(action)\"", forHTTPHeaderField: "SOAPACTION")
-        request.httpBody = Data("""
-        <?xml version="1.0"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" \
-        s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body><u:\(action) xmlns:u="\(service)">\
-        <InstanceID>0</InstanceID>\(arguments)</u:\(action)></s:Body></s:Envelope>
-        """.utf8)
+        request.httpBody = Data(
+            """
+            <?xml version="1.0"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" \
+            s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body><u:\(action) xmlns:u="\(service)">\
+            <InstanceID>0</InstanceID>\(arguments)</u:\(action)></s:Body></s:Envelope>
+            """.utf8)
         let (data, response) = try await TVRest.session.data(for: request)
         guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
         return String(decoding: data, as: UTF8.self)
@@ -64,7 +65,7 @@ public struct RenderingControl: Sendable {
 
     static func value(of tag: String, in xml: String) -> String? {
         guard let start = xml.range(of: "<\(tag)>"),
-              let end = xml.range(of: "</\(tag)>", range: start.upperBound..<xml.endIndex)
+            let end = xml.range(of: "</\(tag)>", range: start.upperBound..<xml.endIndex)
         else { return nil }
         return xml[start.upperBound..<end.lowerBound].trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -78,8 +79,9 @@ private actor ControlPathCache {
         if let path = paths[host] { return path }
         var path = RenderingControl.defaultControlPath
         if let url = URL(string: "http://\(host):9197/dmr"),
-           let (data, _) = try? await TVRest.session.data(from: url),
-           let found = RenderingControl.renderingControlPath(inDescription: String(decoding: data, as: UTF8.self)) {
+            let (data, _) = try? await TVRest.session.data(from: url),
+            let found = RenderingControl.renderingControlPath(inDescription: String(decoding: data, as: UTF8.self))
+        {
             path = found
         }
         paths[host] = path

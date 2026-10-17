@@ -10,7 +10,8 @@ public enum AppCatalog {
     /// Numeric IDs first: when an app answers under several IDs, the first one wins.
     public static let candidateIDs: [String] = [
         // Popular streaming
-        "3202012022410", "111399002181", "3202009021664", "3202006021088", "111299001912", "3201907018807", "11101200001", "3201910019365", "3201512006785",
+        "3202012022410", "111399002181", "3202009021664", "3202006021088", "111299001912", "3201907018807",
+        "11101200001", "3201910019365", "3201512006785",
         "3201901017640", "3202009021709", "3202204027038", "3202301029760", "3201601007230",
         "111299002125", "3201810017074", "11111300404", "3202208028071", "3201803015944",
         "3202006021105", "3201807016597", "3201908019041", "3201606009684", "3201512006963",
@@ -49,7 +50,9 @@ public enum AppCatalog {
     ]
 
     /// Apps that are installed on every Samsung TV and rarely opened on purpose.
-    public static let quietByDefault: Set<String> = ["Samsung Promotion", "Security Center", "Apple AirPlay", "Samsung TV Plus"]
+    public static let quietByDefault: Set<String> = [
+        "Samsung Promotion", "Security Center", "Apple AirPlay", "Samsung TV Plus",
+    ]
 
     /// Asks the TV about every candidate (plus `extraIDs`) and returns the installed apps, one per name.
     public static func scan(host: String, extraIDs: [String] = []) async -> [TVApp] {
@@ -153,11 +156,12 @@ public enum AppIcons {
     public static let directory: URL? = {
         // Not `Bundle.module`: it crashes when the bundle isn't where SwiftPM expects, and inside a
         // signed .app it can't sit where SwiftPM expects.
-        let bases = [
-            Bundle.main.resourceURL,
-            Bundle.main.executableURL?.deletingLastPathComponent(),
-            Bundle.main.bundleURL,
-        ].compactMap { $0 } + Bundle.allBundles.map { $0.bundleURL.deletingLastPathComponent() }
+        let bases =
+            [
+                Bundle.main.resourceURL,
+                Bundle.main.executableURL?.deletingLastPathComponent(),
+                Bundle.main.bundleURL,
+            ].compactMap { $0 } + Bundle.allBundles.map { $0.bundleURL.deletingLastPathComponent() }
         for base in bases {
             let items = (try? FileManager.default.contentsOfDirectory(at: base, includingPropertiesForKeys: nil)) ?? []
             for item in items where item.lastPathComponent.hasSuffix("_TVKit.bundle") {
@@ -170,7 +174,7 @@ public enum AppIcons {
     /// The bundled PNG for an app name, if TVKit knows the app.
     public static func png(forAppNamed name: String) -> Data? {
         guard let slug = AppCatalog.brand(for: name)?.icon,
-              let url = directory?.appendingPathComponent("\(slug).png")
+            let url = directory?.appendingPathComponent("\(slug).png")
         else { return nil }
         return try? Data(contentsOf: url)
     }

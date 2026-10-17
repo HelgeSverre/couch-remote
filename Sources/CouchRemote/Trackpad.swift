@@ -118,7 +118,7 @@ private struct PointerCaptureView: NSViewRepresentable {
             isCaptured = true
             window.acceptsMouseMovedEvents = true
             window.makeFirstResponder(self)
-            CGAssociateMouseAndMouseCursorPosition(0) // cursor stays put; deltas keep coming
+            CGAssociateMouseAndMouseCursorPosition(0)  // cursor stays put; deltas keep coming
             NSCursor.hide()
             pendingX = 0
             pendingY = 0
@@ -128,10 +128,12 @@ private struct PointerCaptureView: NSViewRepresentable {
             // Give the cursor back whenever the window or app stops being in front.
             let center = NotificationCenter.default
             observers = [
-                center.addObserver(forName: NSWindow.didResignKeyNotification, object: window, queue: .main) { [weak self] _ in
+                center.addObserver(forName: NSWindow.didResignKeyNotification, object: window, queue: .main) {
+                    [weak self] _ in
                     MainActor.assumeIsolated { self?.release() }
                 },
-                center.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
+                center.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) {
+                    [weak self] _ in
                     MainActor.assumeIsolated { self?.release() }
                 },
             ]

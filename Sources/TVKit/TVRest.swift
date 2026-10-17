@@ -18,32 +18,41 @@ public struct DeviceInfo: Sendable, Equatable {
 }
 
 extension DeviceInfo: Decodable {
-    private struct Envelope: Decodable { let device: Raw }
-    private struct Raw: Decodable {
-        let name: String?
-        let modelName: String?
-        let model: String?
-        let PowerState: String?
-        let wifiMac: String?
-        let ip: String?
-        let OS: String?
-        let developerMode: String?
-        let developerIP: String?
-        let TokenAuthSupport: String?
-    }
-
+    private struct Envelope: Decodable { let device: DeviceInfoJSON }
     public init(from decoder: Decoder) throws {
         let raw = try Envelope(from: decoder).device
         name = raw.name ?? "Samsung TV"
         modelName = raw.modelName ?? ""
         model = raw.model
-        powerState = raw.PowerState
+        powerState = raw.powerState
         wifiMAC = raw.wifiMac
         ip = raw.ip
-        os = raw.OS
+        os = raw.os
         developerMode = raw.developerMode == "1"
         developerIP = raw.developerIP
-        tokenAuth = raw.TokenAuthSupport == "true"
+        tokenAuth = raw.tokenAuthSupport == "true"
+    }
+}
+
+/// `device` object of `GET /api/v2/` as the TV sends it.
+private struct DeviceInfoJSON: Decodable {
+    let name: String?
+    let modelName: String?
+    let model: String?
+    let powerState: String?
+    let wifiMac: String?
+    let ip: String?
+    let os: String?
+    let developerMode: String?
+    let developerIP: String?
+    let tokenAuthSupport: String?
+
+    /// The TV mixes key styles (`PowerState`, `OS`, `TokenAuthSupport`).
+    enum CodingKeys: String, CodingKey {
+        case name, modelName, model, wifiMac, ip, developerMode, developerIP
+        case powerState = "PowerState"
+        case os = "OS"
+        case tokenAuthSupport = "TokenAuthSupport"
     }
 }
 

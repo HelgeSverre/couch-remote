@@ -16,9 +16,10 @@ struct PopoverView: View {
         }
         .padding(14)
         .frame(width: 340)
-        .background(WindowVisibilityReader { window, visible in
-            model.setPopover(window: window, visible: visible)
-        })
+        .background(
+            WindowVisibilityReader { window, visible in
+                model.setPopover(window: window, visible: visible)
+            })
     }
 }
 
@@ -115,21 +116,25 @@ private struct StatusBanner: View {
     var body: some View {
         switch model.link {
         case .waitingForApproval:
-            banner(symbol: "hand.tap", title: "Press Allow on your TV",
-                   detail: "The TV is asking whether Couch Remote may control it.")
+            banner(
+                symbol: "hand.tap", title: "Press Allow on your TV",
+                detail: "The TV is asking whether Couch Remote may control it.")
         case .failed(let message):
-            banner(symbol: "exclamationmark.triangle", title: "Can't control the TV", detail: message,
-                   action: ("Pair Again", model.pairAgain))
+            banner(
+                symbol: "exclamationmark.triangle", title: "Can't control the TV", detail: message,
+                action: ("Pair Again", model.pairAgain))
         case .noTV:
-            banner(symbol: "magnifyingglass", title: "No TV found",
-                   detail: "Turn the TV on and make sure it's on the same Wi-Fi as this Mac.",
-                   action: ("Search Again", { Task { await model.discover(autoSelect: true) } }))
+            banner(
+                symbol: "magnifyingglass", title: "No TV found",
+                detail: "Turn the TV on and make sure it's on the same Wi-Fi as this Mac.",
+                action: ("Search Again", { Task { await model.discover(autoSelect: true) } }))
         default:
             EmptyView()
         }
     }
 
-    private func banner(symbol: String, title: String, detail: String, action: (String, () -> Void)? = nil) -> some View {
+    private func banner(symbol: String, title: String, detail: String, action: (String, () -> Void)? = nil) -> some View
+    {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: symbol)
                 .font(.system(size: 15, weight: .semibold))
@@ -205,7 +210,9 @@ private struct AppsSection: View {
                             } preview: {
                                 AppIconView(app: app, icon: model.icons[app.id]).frame(width: 46, height: 46)
                             }
-                            .onDrop(of: [.text], delegate: ReorderDropDelegate(target: app.id, model: model, dragging: $dragging))
+                            .onDrop(
+                                of: [.text],
+                                delegate: ReorderDropDelegate(target: app.id, model: model, dragging: $dragging))
                     }
                 }
                 // Dropping between tiles still ends the drag.
@@ -332,11 +339,19 @@ private struct RemoteSection: View {
             VStack(spacing: 14) {
                 HoldCircle(key: .back, diameter: 40) { Image(systemName: "arrow.uturn.backward") }
                     .help("Back (⌫). Hold to leave the app.")
-                Button { model.press(.home) } label: { Image(systemName: "house") }
-                    .help("Home (H)")
+                Button {
+                    model.press(.home)
+                } label: {
+                    Image(systemName: "house")
+                }
+                .help("Home (H)")
                 // Opens the TV's own input list. KEY_HDMI1 and KEY_HDMI2 did nothing on this TV (tested); KEY_SOURCE works.
-                Button { model.press(.source) } label: { Image(systemName: "cable.connector.horizontal") }
-                    .help("Source: show the TV's input list, then pick with the arrows and OK")
+                Button {
+                    model.press(.source)
+                } label: {
+                    Image(systemName: "cable.connector.horizontal")
+                }
+                .help("Source: show the TV's input list, then pick with the arrows and OK")
             }
             Spacer()
             if model.pointerMode {
@@ -350,14 +365,20 @@ private struct RemoteSection: View {
             VStack(spacing: 14) {
                 Button(action: model.playPause) { Image(systemName: "playpause.fill") }
                     .help("Play / Pause (space)")
-                Button { model.press(.info) } label: { Image(systemName: "info") }
-                    .help("Info (I)")
+                Button {
+                    model.press(.info)
+                } label: {
+                    Image(systemName: "info")
+                }
+                .help("Info (I)")
                 Button {
                     withAnimation(.snappy(duration: 0.2)) { model.pointerMode.toggle() }
                 } label: {
                     Image(systemName: model.pointerMode ? "dpad" : "cursorarrow.rays")
                 }
-                .help(model.pointerMode ? "Back to arrow buttons" : "Trackpad: steer the TV's cursor, e.g. in the browser")
+                .help(
+                    model.pointerMode ? "Back to arrow buttons" : "Trackpad: steer the TV's cursor, e.g. in the browser"
+                )
             }
         }
         .buttonStyle(GlassCircleButtonStyle(diameter: 40))
@@ -446,9 +467,9 @@ private struct HoldsKey: ViewModifier {
     }
 }
 
-private extension View {
+extension View {
     /// Mouse down sends Press, mouse up sends Release. A quick click is a single press on the TV.
-    func holdsKey(_ key: RemoteKey) -> some View {
+    fileprivate func holdsKey(_ key: RemoteKey) -> some View {
         modifier(HoldsKey(key: key))
     }
 }
@@ -476,11 +497,19 @@ private struct VolumeRow: View {
                 .frame(width: 24, alignment: .trailing)
 
             HStack(spacing: 0) {
-                Button { model.press(.channelDown) } label: { Image(systemName: "chevron.down").frame(width: 26, height: 28) }
-                    .help("Channel down")
+                Button {
+                    model.press(.channelDown)
+                } label: {
+                    Image(systemName: "chevron.down").frame(width: 26, height: 28)
+                }
+                .help("Channel down")
                 Text("CH").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
-                Button { model.press(.channelUp) } label: { Image(systemName: "chevron.up").frame(width: 26, height: 28) }
-                    .help("Channel up")
+                Button {
+                    model.press(.channelUp)
+                } label: {
+                    Image(systemName: "chevron.up").frame(width: 26, height: 28)
+                }
+                .help("Channel up")
             }
             .font(.system(size: 11, weight: .bold))
             .buttonStyle(.plain)

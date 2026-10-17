@@ -11,7 +11,8 @@ public enum RemoteChannelError: LocalizedError, Equatable {
         switch self {
         case .unauthorized: "The TV declined the connection."
         case .timedOut: "The TV did not answer in time."
-        case .closed(let reason): reason.map { "The TV closed the connection: \($0)" } ?? "The TV closed the connection."
+        case .closed(let reason):
+            reason.map { "The TV closed the connection: \($0)" } ?? "The TV closed the connection."
         case .notConnected: "Not connected to the TV."
         case .badAddress: "The TV address is not valid."
         }
@@ -74,7 +75,7 @@ public final class RemoteChannel: NSObject, @unchecked Sendable {
         return try await withCheckedThrowingContinuation { cont in
             let session = URLSession(configuration: .ephemeral, delegate: self, delegateQueue: nil)
             let task = session.webSocketTask(with: url)
-            task.maximumMessageSize = 32 << 20 // icons arrive as base64 PNGs
+            task.maximumMessageSize = 32 << 20  // icons arrive as base64 PNGs
             lock.withLock {
                 self.session = session
                 self.task = task
@@ -111,7 +112,9 @@ public final class RemoteChannel: NSObject, @unchecked Sendable {
     public func sendKey(_ key: RemoteKey, action: KeyAction = .click) throws {
         try send([
             "method": "ms.remote.control",
-            "params": ["Cmd": action.rawValue, "DataOfCmd": key.rawValue, "Option": "false", "TypeOfRemote": "SendRemoteKey"],
+            "params": [
+                "Cmd": action.rawValue, "DataOfCmd": key.rawValue, "Option": "false", "TypeOfRemote": "SendRemoteKey",
+            ],
         ])
     }
 
@@ -120,12 +123,16 @@ public final class RemoteChannel: NSObject, @unchecked Sendable {
     public func movePointer(dx: Int, dy: Int) throws {
         try send([
             "method": "ms.remote.control",
-            "params": ["Cmd": "Move", "Position": ["x": dx, "y": dy, "Time": "0"], "TypeOfRemote": "ProcessMouseDevice"],
+            "params": [
+                "Cmd": "Move", "Position": ["x": dx, "y": dy, "Time": "0"], "TypeOfRemote": "ProcessMouseDevice",
+            ],
         ])
     }
 
     public func clickPointer(_ button: PointerButton) throws {
-        try send(["method": "ms.remote.control", "params": ["Cmd": button.rawValue, "TypeOfRemote": "ProcessMouseDevice"]])
+        try send([
+            "method": "ms.remote.control", "params": ["Cmd": button.rawValue, "TypeOfRemote": "ProcessMouseDevice"],
+        ])
     }
 
     public func requestInstalledApps() throws {
@@ -138,11 +145,13 @@ public final class RemoteChannel: NSObject, @unchecked Sendable {
 
     /// Launch over the socket. 2021 firmware ignores this; `TVRest.launch` works there.
     public func launch(appID: String, appType: Int = 2, metaTag: String = "") throws {
-        try emit("ed.apps.launch", data: [
-            "appId": appID,
-            "action_type": appType == 4 ? "NATIVE_LAUNCH" : "DEEP_LINK",
-            "metaTag": metaTag,
-        ])
+        try emit(
+            "ed.apps.launch",
+            data: [
+                "appId": appID,
+                "action_type": appType == 4 ? "NATIVE_LAUNCH" : "DEEP_LINK",
+                "metaTag": metaTag,
+            ])
     }
 
     /// Replaces the contents of the TV's focused text field (tested: sending "ab" then "abc" leaves "abc").
@@ -150,7 +159,9 @@ public final class RemoteChannel: NSObject, @unchecked Sendable {
     public func sendText(_ text: String) throws {
         try send([
             "method": "ms.remote.control",
-            "params": ["Cmd": Data(text.utf8).base64EncodedString(), "DataOfCmd": "base64", "TypeOfRemote": "SendInputString"],
+            "params": [
+                "Cmd": Data(text.utf8).base64EncodedString(), "DataOfCmd": "base64", "TypeOfRemote": "SendInputString",
+            ],
         ])
     }
 
@@ -237,9 +248,11 @@ public final class RemoteChannel: NSObject, @unchecked Sendable {
     static let debug = ProcessInfo.processInfo.environment["TVKIT_DEBUG"] != nil
 
     func handle(_ data: Data) {
-        if Self.debug { FileHandle.standardError.write(Data("← \(String(decoding: data.prefix(600), as: UTF8.self))\n".utf8)) }
+        if Self.debug {
+            FileHandle.standardError.write(Data("← \(String(decoding: data.prefix(600), as: UTF8.self))\n".utf8))
+        }
         guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let event = object["event"] as? String
+            let event = object["event"] as? String
         else { return }
         let payload = object["data"] as? [String: Any]
 
@@ -255,8 +268,9 @@ public final class RemoteChannel: NSObject, @unchecked Sendable {
             continuation.yield(.installedApps(list.compactMap(TVApp.init(json:))))
         case "ed.apps.icon":
             if let path = payload?["iconPath"] as? String,
-               let base64 = payload?["imageBase64"] as? String,
-               let png = Data(base64Encoded: base64) {
+                let base64 = payload?["imageBase64"] as? String,
+                let png = Data(base64Encoded: base64)
+            {
                 continuation.yield(.icon(path: path, png: png))
             }
         case "ms.remote.imeStart":
@@ -278,8 +292,8 @@ extension RemoteChannel: URLSessionWebSocketDelegate {
     ) async -> (URLSession.AuthChallengeDisposition, URLCredential?) {
         let space = challenge.protectionSpace
         guard space.authenticationMethod == NSURLAuthenticationMethodServerTrust,
-              space.host == host,
-              let trust = space.serverTrust
+            space.host == host,
+            let trust = space.serverTrust
         else { return (.performDefaultHandling, nil) }
         return (.useCredential, URLCredential(trust: trust))
     }

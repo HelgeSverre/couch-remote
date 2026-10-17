@@ -173,7 +173,8 @@ final class RemoteModel {
         } catch RemoteChannelError.unauthorized {
             link = .failed("The TV declined. Choose Pair Again, then press Allow on the TV.")
         } catch {
-            link = config.token == nil
+            link =
+                config.token == nil
                 ? .failed("The TV didn't answer the pairing request. Choose Pair Again, then press Allow on the TV.")
                 : .failed(error.localizedDescription)
         }
@@ -342,7 +343,7 @@ final class RemoteModel {
     }
 
     func clickPointer(_ button: PointerButton) {
-        typedText = "" // a click may focus a different field
+        typedText = ""  // a click may focus a different field
         tv?.click(button)
     }
 
@@ -420,8 +421,6 @@ final class RemoteModel {
         muted.toggle()
     }
 
-
-
     private func flash(_ key: RemoteKey) {
         flashedKey = key
         flashCount += 1
@@ -465,9 +464,9 @@ final class RemoteModel {
     /// Arrow keys steer, Return is OK, Delete is Back. Typing in a text field is left alone.
     private func handleKey(_ event: KeyPress) -> Bool {
         guard remoteWindows[event.windowNumber] == true,
-              let window = NSApp.window(withWindowNumber: event.windowNumber),
-              !(window.firstResponder is NSText),
-              event.modifierFlags.isDisjoint(with: [.command, .control])
+            let window = NSApp.window(withWindowNumber: event.windowNumber),
+            !(window.firstResponder is NSText),
+            event.modifierFlags.isDisjoint(with: [.command, .control])
         else { return false }
 
         if pointerCaptured, event.isDown, handleTyping(event) { return true }
@@ -481,7 +480,7 @@ final class RemoteModel {
                 heldKeyCodes[event.keyCode] = key
                 hold(key)
             }
-            return true // swallow auto-repeat: the TV repeats on its own while the key is held
+            return true  // swallow auto-repeat: the TV repeats on its own while the key is held
         }
         guard event.isDown else { return false }
 
@@ -518,7 +517,9 @@ final class RemoteModel {
             return false
         default:
             guard let characters = event.characters, !characters.isEmpty,
-                  characters.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) && !(0xF700...0xF8FF).contains($0.value) })
+                characters.unicodeScalars.allSatisfy({
+                    !CharacterSet.controlCharacters.contains($0) && !(0xF700...0xF8FF).contains($0.value)
+                })
             else { return false }
             setTypedText(typedText + characters)
             return true
@@ -628,7 +629,10 @@ struct AppIcon {
     init?(png: Data) {
         guard let image = NSImage(data: png), let bitmap = NSBitmapImageRep(data: png) else { return nil }
         self.image = image
-        let corners = [(1, 1), (bitmap.pixelsWide - 2, 1), (1, bitmap.pixelsHigh - 2), (bitmap.pixelsWide - 2, bitmap.pixelsHigh - 2)]
+        let corners = [
+            (1, 1), (bitmap.pixelsWide - 2, 1), (1, bitmap.pixelsHigh - 2),
+            (bitmap.pixelsWide - 2, bitmap.pixelsHigh - 2),
+        ]
         fillsTile = corners.allSatisfy { (bitmap.colorAt(x: $0.0, y: $0.1)?.alphaComponent ?? 0) > 0.95 }
     }
 }

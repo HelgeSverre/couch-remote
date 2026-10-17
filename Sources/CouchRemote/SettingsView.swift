@@ -75,21 +75,29 @@ struct SettingsView: View {
     }
 
     private var remapSection: some View {
-        let apps = model.config.knownApps.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        let apps = model.config.knownApps.sorted {
+            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
         return Section {
             ForEach(model.config.remaps) { rule in
                 HStack(spacing: 8) {
-                    Picker("When", selection: Binding(
-                        get: { rule.fromAppID },
-                        set: { model.updateRemap(rule.id, from: $0) }
-                    )) {
+                    Picker(
+                        "When",
+                        selection: Binding(
+                            get: { rule.fromAppID },
+                            set: { model.updateRemap(rule.id, from: $0) }
+                        )
+                    ) {
                         ForEach(apps) { Text($0.name).tag($0.id) }
                     }
                     Image(systemName: "arrow.right").foregroundStyle(.secondary)
-                    Picker("Open instead", selection: Binding(
-                        get: { rule.toAppID },
-                        set: { model.updateRemap(rule.id, to: $0) }
-                    )) {
+                    Picker(
+                        "Open instead",
+                        selection: Binding(
+                            get: { rule.toAppID },
+                            set: { model.updateRemap(rule.id, to: $0) }
+                        )
+                    ) {
                         ForEach(apps.filter { $0.id != rule.fromAppID }) { Text($0.name).tag($0.id) }
                     }
                     .labelsHidden()
@@ -107,7 +115,9 @@ struct SettingsView: View {
         } header: {
             Text("Remote Buttons")
         } footer: {
-            footer("Repurpose an app button on your TV remote: when the left app opens, the right one opens instead. Works while Couch Remote is running.")
+            footer(
+                "Repurpose an app button on your TV remote: when the left app opens, the right one opens instead. Works while Couch Remote is running."
+            )
         }
     }
 
@@ -154,7 +164,11 @@ struct SettingsView: View {
             Toggle("Open at login", isOn: $openAtLogin)
                 .onChange(of: openAtLogin) { _, enabled in
                     do {
-                        if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
+                        if enabled {
+                            try SMAppService.mainApp.register()
+                        } else {
+                            try SMAppService.mainApp.unregister()
+                        }
                         loginError = nil
                     } catch {
                         loginError = error.localizedDescription

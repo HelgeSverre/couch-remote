@@ -89,7 +89,7 @@ public enum ConfigStore {
 
     public static func load() -> TVConfig {
         guard let data = try? Data(contentsOf: fileURL),
-              let config = try? JSONDecoder().decode(TVConfig.self, from: data)
+            let config = try? JSONDecoder().decode(TVConfig.self, from: data)
         else { return TVConfig() }
         return config
     }

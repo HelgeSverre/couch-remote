@@ -51,8 +51,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @MainActor
     private func showSettingsPreview() {
         let hosting = NSHostingView(rootView: SettingsView().environment(model))
-        let window = NSWindow(contentRect: NSRect(origin: .zero, size: hosting.fittingSize),
-                              styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        let window = NSWindow(
+            contentRect: NSRect(origin: .zero, size: hosting.fittingSize),
+            styleMask: [.titled, .closable], backing: .buffered, defer: false)
         window.title = "Settings"
         window.contentView = hosting
         window.center()
@@ -101,7 +102,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         effect.material = .popover
         effect.state = .active
         let hosting = NSHostingView(rootView: PopoverView().environment(model))
-        hosting.safeAreaRegions = [] // the hidden title bar shouldn't push content down
+        hosting.safeAreaRegions = []  // the hidden title bar shouldn't push content down
         hosting.translatesAutoresizingMaskIntoConstraints = false
         effect.addSubview(hosting)
         NSLayoutConstraint.activate([
@@ -110,8 +111,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             hosting.topAnchor.constraint(equalTo: effect.topAnchor),
             hosting.bottomAnchor.constraint(equalTo: effect.bottomAnchor),
         ])
-        let window = RemoteWindow(contentRect: NSRect(origin: .zero, size: hosting.fittingSize),
-                                  styleMask: [.titled, .closable, .fullSizeContentView], backing: .buffered, defer: false)
+        let window = RemoteWindow(
+            contentRect: NSRect(origin: .zero, size: hosting.fittingSize),
+            styleMask: [.titled, .closable, .fullSizeContentView], backing: .buffered, defer: false)
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         for button in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
@@ -147,13 +149,16 @@ final class HotKey {
         self.action = action
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
         let context = Unmanaged.passUnretained(self).toOpaque()
-        InstallEventHandler(GetApplicationEventTarget(), { _, _, context in
-            guard let context else { return noErr }
-            Unmanaged<HotKey>.fromOpaque(context).takeUnretainedValue().action()
-            return noErr
-        }, 1, &eventType, context, &handlerRef)
-        RegisterEventHotKey(keyCode, modifiers, EventHotKeyID(signature: OSType(0x4352_4D54), id: 1), // "CRMT"
-                            GetApplicationEventTarget(), 0, &hotKeyRef)
+        InstallEventHandler(
+            GetApplicationEventTarget(),
+            { _, _, context in
+                guard let context else { return noErr }
+                Unmanaged<HotKey>.fromOpaque(context).takeUnretainedValue().action()
+                return noErr
+            }, 1, &eventType, context, &handlerRef)
+        RegisterEventHotKey(
+            keyCode, modifiers, EventHotKeyID(signature: OSType(0x4352_4D54), id: 1),  // "CRMT"
+            GetApplicationEventTarget(), 0, &hotKeyRef)
     }
 
     deinit {

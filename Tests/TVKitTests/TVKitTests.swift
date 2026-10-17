@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import TVKit
 
 final class TVKitTests: XCTestCase {
@@ -13,10 +14,10 @@ final class TVKitTests: XCTestCase {
 
     func testDeviceInfoDecodesRealResponse() throws {
         let json = """
-        {"device":{"PowerState":"on","OS":"Tizen","developerIP":"0.0.0.0","developerMode":"0",
-        "model":"21_NIKEL_UHD","modelName":"QE55Q65AAUXXC","name":"Samsung Q65AA 55 TV",
-        "wifiMac":"8C:EA:48:63:07:28","TokenAuthSupport":"true"},"name":"Samsung Q65AA 55 TV"}
-        """
+            {"device":{"PowerState":"on","OS":"Tizen","developerIP":"0.0.0.0","developerMode":"0",
+            "model":"21_NIKEL_UHD","modelName":"QE55Q65AAUXXC","name":"Samsung Q65AA 55 TV",
+            "wifiMac":"8C:EA:48:63:07:28","TokenAuthSupport":"true"},"name":"Samsung Q65AA 55 TV"}
+            """
         let info = try JSONDecoder().decode(DeviceInfo.self, from: Data(json.utf8))
         XCTAssertEqual(info.modelName, "QE55Q65AAUXXC")
         XCTAssertEqual(info.wifiMAC, "8C:EA:48:63:07:28")
@@ -33,11 +34,11 @@ final class TVKitTests: XCTestCase {
 
     func testFindsRenderingControlPathInDescription() {
         let xml = """
-        <service><serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType>
-        <controlURL>/upnp/control/ConnectionManager1</controlURL></service>
-        <service><serviceType>urn:schemas-upnp-org:service:RenderingControl:1</serviceType>
-        <SCPDURL>/RenderingControl_1.xml</SCPDURL><controlURL>/upnp/control/RenderingControl1</controlURL></service>
-        """
+            <service><serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType>
+            <controlURL>/upnp/control/ConnectionManager1</controlURL></service>
+            <service><serviceType>urn:schemas-upnp-org:service:RenderingControl:1</serviceType>
+            <SCPDURL>/RenderingControl_1.xml</SCPDURL><controlURL>/upnp/control/RenderingControl1</controlURL></service>
+            """
         XCTAssertEqual(RenderingControl.renderingControlPath(inDescription: xml), "/upnp/control/RenderingControl1")
         XCTAssertEqual(RenderingControl.renderingControlPath(inDescription: "<root/>"), nil)
     }
@@ -53,12 +54,15 @@ final class TVKitTests: XCTestCase {
 
     func testChannelURLCarriesNameAndToken() throws {
         let url = try XCTUnwrap(RemoteChannel.url(host: "192.168.10.57", clientName: "Couch Remote", token: "123"))
-        XCTAssertEqual(url.absoluteString,
-                       "wss://192.168.10.57:8002/api/v2/channels/samsung.remote.control?name=Q291Y2ggUmVtb3Rl&token=123")
+        XCTAssertEqual(
+            url.absoluteString,
+            "wss://192.168.10.57:8002/api/v2/channels/samsung.remote.control?name=Q291Y2ggUmVtb3Rl&token=123")
         // Older TVs without token auth: plain ws on 8001, no token.
-        let legacy = try XCTUnwrap(RemoteChannel.url(host: "192.168.10.57", clientName: "Couch Remote", token: "123", secure: false))
-        XCTAssertEqual(legacy.absoluteString,
-                       "ws://192.168.10.57:8001/api/v2/channels/samsung.remote.control?name=Q291Y2ggUmVtb3Rl")
+        let legacy = try XCTUnwrap(
+            RemoteChannel.url(host: "192.168.10.57", clientName: "Couch Remote", token: "123", secure: false))
+        XCTAssertEqual(
+            legacy.absoluteString,
+            "ws://192.168.10.57:8001/api/v2/channels/samsung.remote.control?name=Q291Y2ggUmVtb3Rl")
     }
 
     func testConfigDecodesOlderFiles() throws {
@@ -93,28 +97,29 @@ final class TVKitTests: XCTestCase {
     func testEveryBrandIconIsBundled() throws {
         let directory = try XCTUnwrap(AppIcons.directory, "TVKit resource bundle not found")
         for slug in Set(AppCatalog.brands.compactMap(\.icon)) {
-            XCTAssertTrue(FileManager.default.fileExists(atPath: directory.appendingPathComponent("\(slug).png").path), slug)
+            XCTAssertTrue(
+                FileManager.default.fileExists(atPath: directory.appendingPathComponent("\(slug).png").path), slug)
         }
         XCTAssertNotNil(AppIcons.png(forAppNamed: "NRK TV"))
     }
 
     func testParsesVdApplist() {
         let output = """
-        get app list...
-        apps count: 2
-        ---------------------------------------------------------------------------------------------
-        --------------app_id                                =3201907018807-------------
-        --------------app_title                             =Netflix-------------
-        --------------app_version                           =70.23.15090-------------
-        --------------install_date                          =2021-07-15 19:57:31-------------
-        --------------app_tizen_id                          =org.tizen.netflix-app-------------
-        --------------use_count                             =2712-------------
-        --------------app_panel_icon_path                   =/opt/share/webappservice/apps_icon/all/3201907018807/-------------
-        ---------------------------------------------------------------------------------------------
-        --------------app_id                                =111399002181-------------
-        --------------app_title                             =TV 2 Play-------------
-        --------------use_count                             =241-------------
-        """
+            get app list...
+            apps count: 2
+            ---------------------------------------------------------------------------------------------
+            --------------app_id                                =3201907018807-------------
+            --------------app_title                             =Netflix-------------
+            --------------app_version                           =70.23.15090-------------
+            --------------install_date                          =2021-07-15 19:57:31-------------
+            --------------app_tizen_id                          =org.tizen.netflix-app-------------
+            --------------use_count                             =2712-------------
+            --------------app_panel_icon_path                   =/opt/share/webappservice/apps_icon/all/3201907018807/-------------
+            ---------------------------------------------------------------------------------------------
+            --------------app_id                                =111399002181-------------
+            --------------app_title                             =TV 2 Play-------------
+            --------------use_count                             =241-------------
+            """
         let apps = InstalledApp.parse(output)
         XCTAssertEqual(apps.map(\.id), ["3201907018807", "111399002181"])
         XCTAssertEqual(apps[0].tizenID, "org.tizen.netflix-app")
