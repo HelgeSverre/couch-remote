@@ -89,7 +89,7 @@ running, and the first app shows for about a second before the switch.
 ## tvctl
 
 `tvctl` (short for "TV control") is a command-line tool for the same TV. It sends keys,
-opens apps, sets the volume and finds or pairs TVs: everything the app does, minus the
+opens apps, sets the volume and finds or pairs TVs: most of what the app does, without the
 window. Use it in shell scripts, from Shortcuts or Raycast, or to see what a TV supports when
 something doesn't work. It reads the same settings file as the app, so once either one is
 paired, both are.
